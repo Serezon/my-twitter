@@ -1,0 +1,13 @@
+{
+  "name": "my-twitter",
+  "version": "1.0.0",
+  "main": "server.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon -L server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "nodemon": "^2.0.16"
+  }
+}
