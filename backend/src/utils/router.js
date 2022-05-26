@@ -38,12 +38,25 @@ class Router {
   }
 
   patternToRegex(pattern) {
-    return new RegExp(pattern.replace(/(:\w+)/, "((\\d+|\\w+)+)"), "g");
+    return new RegExp(pattern.replace(/(:\w+)/g, "([0-9a-zA-Z]+)"), "g");
   }
 
   routeNotFound(res) {
     res.writeHead(404);
     res.end();
+  }
+
+  getRouteParamsFromUrl(url, pattern) {
+    const props = pattern.match(/(:\w+)/g);
+    if (!props) return null;
+    const matches = Array.from(url.matchAll(this.patternToRegex(pattern)))[0];
+    if (!matches) return null;
+    const groups = matches.slice(1);
+    if (!groups.length) return null;
+    return props.reduce((acc, prop, i) => {
+      acc[prop.slice(1)] = groups[i];
+      return acc;
+    }, {});
   }
 
   runControllerByRouterMatch(req, res) {
@@ -56,7 +69,7 @@ class Router {
     }
 
     const match = this.routes[method].find(({ pattern }) => {
-      const matches = url.match(this.patternToRegex(pattern))
+      const matches = url.match(this.patternToRegex(pattern));
       return !!matches && url === matches[0];
     });
 
@@ -64,6 +77,9 @@ class Router {
       this.routeNotFound(res);
       return;
     }
+    
+    const routeParams = this.getRouteParamsFromUrl(url, match.pattern)
+    if (routeParams) req.routeParams = routeParams;
 
     match.controller(req, res);
   }
