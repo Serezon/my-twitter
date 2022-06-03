@@ -1,8 +1,7 @@
 const router = require("./routes");
 
-router.use((req, res, next) => {
+router.use((req, res) => {
   console.log('Global middleware test');
-  next();
 });
 
 const app = router.app.bind(router);

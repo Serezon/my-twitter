@@ -12,15 +12,8 @@ class Router {
       if (!this.routes[method]) this.routes[method] = [];
       this.routes[method].push({
         pattern,
-        controller: (req, res) => {
-          const wrapped = this.composeMiddlewares(
-            middlewares,
-            () => controller(req, res),
-            req,
-            res
-          );
-          wrapped[wrapped.length - 1]();
-        },
+        controller,
+        middlewares,
       });
       return this;
     };
@@ -81,29 +74,42 @@ class Router {
     const routeParams = this.getRouteParamsFromUrl(url, match.pattern)
     if (routeParams) req.routeParams = routeParams;
 
-    match.controller(req, res);
+    this.executeRoute(match, req, res);
   }
 
-  composeMiddlewares(middlewares, initialFn, req, res) {
-    return middlewares.reduceRight(
-      (acc, x) => {
-        const prevIndex = acc.length - 1;
-        acc.push(() => x(req, res, acc[prevIndex]));
-        return acc;
-      },
-      [initialFn]
-    );
+  async executeRoute(route, req, res) {
+    const controller = route.controller;
+    const middlewares = this.middlewares.concat(route.middlewares);
+
+    try {
+      for (const middleware of middlewares) {
+        await middleware(req, res);
+      }
+
+      if (controller.length > 1) {
+        await controller(req, res);
+      } else {
+        const result = await controller(req);
+
+        res.write(JSON.stringify(result));
+        res.end();
+      }
+    } catch (e) {
+      console.error(e);
+      // const [message, status] = await this.errorHandler(req, res, e);
+
+      // res.write(JSON.parse({ message }));
+      // res.status = status;
+      // res.end();
+    }
+  }
+
+  handleError(e) {
+    
   }
 
   app(req, res) {
-    const middlewares = this.composeMiddlewares(
-      this.middlewares,
-      () => this.runControllerByRouterMatch(req, res),
-      req,
-      res
-    );
-
-    middlewares[middlewares.length - 1]();
+    this.runControllerByRouterMatch(req, res);
   }
 }
 
