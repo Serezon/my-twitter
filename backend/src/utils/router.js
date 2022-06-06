@@ -1,4 +1,6 @@
+const httpStatusCodes = require("../constants/httpStatusCodes");
 const methods = require("../constants/methods");
+const httpErrors = require("../errors/HttpErrors");
 
 class Router {
   routes = {};
@@ -95,17 +97,23 @@ class Router {
         res.end();
       }
     } catch (e) {
-      console.error(e);
-      // const [message, status] = await this.errorHandler(req, res, e);
+      const {message, statusCode} = await this.handleError(req, res, e);
 
-      // res.write(JSON.parse({ message }));
-      // res.status = status;
-      // res.end();
+      res.statusCode = statusCode;
+      if (message) res.write(JSON.stringify({ message }));
+      res.end();
     }
   }
 
-  handleError(e) {
-    
+  async handleError(req, res, e) {
+    if (e instanceof httpErrors.HttpError) {
+      const { message, statusCode } = e;
+      return { message, statusCode };
+    }
+
+    return {
+      statusCode: httpStatusCodes.INTERNAL_SERVER,
+    }
   }
 
   app(req, res) {

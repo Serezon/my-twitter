@@ -1,3 +1,5 @@
+const { HttpNotFoundError } = require("../errors/HttpErrors");
+
 module.exports = (router) => {
   router.get("/users/:id", (req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
